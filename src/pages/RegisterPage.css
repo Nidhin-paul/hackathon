@@ -1,0 +1,153 @@
+/* Register Page Styles */
+.register-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e88a8 0%, #1a7a9a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.register-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: 3rem 2.5rem;
+  width: 100%;
+  max-width: 480px;
+  animation: scaleIn 0.4s ease-out;
+}
+
+.register-title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #4a5568;
+  text-align: center;
+  margin: 0 0 2.5rem 0;
+  animation: fadeInDown 0.5s ease-out 0.2s both;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.register-button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #1e88a8;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.register-button:hover {
+  background-color: #1a7a9a;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(30, 136, 168, 0.4);
+}
+
+.register-button:active {
+  transform: translateY(0) scale(0.98);
+  animation: pulse 0.3s ease-out;
+}
+
+.register-button:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.register-button:disabled:hover {
+  background-color: #a0aec0;
+  transform: none;
+  box-shadow: none;
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #d1fae5;
+  border: 1px solid #10b981;
+  border-radius: 0.5rem;
+  color: #065f46;
+  font-size: 0.9rem;
+  animation: fadeInDown 0.3s ease-out;
+}
+
+.success-message svg {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+.register-footer {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.login-text {
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.login-link {
+  color: #1e88a8;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.login-link:hover {
+  color: #1a7a9a;
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .register-container {
+    padding: 1rem;
+  }
+
+  .register-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .register-title {
+    font-size: 1.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .register-form {
+    gap: 1.25rem;
+  }
+
+  .register-button {
+    font-size: 0.875rem;
+    padding: 0.875rem;
+  }
+
+  .login-text {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .register-card {
+    padding: 2.5rem 2rem;
+  }
+
+  .register-title {
+    font-size: 2.25rem;
+  }
+}
