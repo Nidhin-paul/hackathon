@@ -9,6 +9,7 @@ import contactRoutes from './routes/contactRoutes.js';
 import logRoutes from './routes/logRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
+import panicAlertRoutes from './routes/panicAlertRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/panic-alerts', panicAlertRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -80,14 +82,55 @@ io.on('connection', (socket) => {
   });
 
   // Handle panic alerts
-  socket.on('panic:alert', (data) => {
+  socket.on('panic:alert', async (data) => {
     console.log('Panic alert received:', data);
-    // Broadcast to all connected clients (especially admins)
-    io.emit('panic:alert', {
-      message: data.message,
-      timestamp: data.timestamp,
-      socketId: socket.id,
-    });
+    
+    try {
+      // Save to database
+      const PanicAlert = (await import('./models/PanicAlert.js')).default;
+      const alert = new PanicAlert({
+        message: data.message || 'PANIC BUTTON PRESSED!',
+        user: data.user || {
+          name: 'Unknown User',
+          email: 'No email',
+          id: 'unknown'
+        },
+        location: data.location || null,
+        status: 'active'
+      });
+      
+      const savedAlert = await alert.save();
+      console.log('Panic alert saved to database:', savedAlert._id);
+      
+      // Broadcast to all connected clients (especially admins)
+      io.emit('panic:alert', {
+        message: data.message,
+        timestamp: data.timestamp,
+        user: data.user || {
+          name: 'Unknown User',
+          email: 'No email',
+          id: 'unknown'
+        },
+        location: data.location || null,
+        socketId: socket.id,
+        alertId: savedAlert._id
+      });
+    } catch (error) {
+      console.error('Error saving panic alert to database:', error);
+      
+      // Still broadcast even if save fails
+      io.emit('panic:alert', {
+        message: data.message,
+        timestamp: data.timestamp,
+        user: data.user || {
+          name: 'Unknown User',
+          email: 'No email',
+          id: 'unknown'
+        },
+        location: data.location || null,
+        socketId: socket.id,
+      });
+    }
   });
 
   // Handle user category selections

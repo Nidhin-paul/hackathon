@@ -65,10 +65,8 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Contact not found' });
     }
     
-    // Prevent updating predefined contacts
-    if (contact.isPredefined) {
-      return res.status(403).json({ message: 'Cannot update predefined contacts' });
-    }
+    // Note: Admins can update any contact including predefined ones
+    // Remove the isPredefined check to allow full admin control
     
     Object.assign(contact, req.body);
     const updatedContact = await contact.save();
@@ -91,10 +89,8 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Contact not found' });
     }
     
-    // Prevent deleting predefined contacts
-    if (contact.isPredefined) {
-      return res.status(403).json({ message: 'Cannot delete predefined contacts' });
-    }
+    // Note: Admins can delete any contact including predefined ones
+    // Remove the isPredefined check to allow full admin control
     
     const contactId = contact._id;
     await contact.deleteOne();

@@ -57,8 +57,10 @@ sudo git clone <your-repo-url> contacthub
 cd contacthub
 
 # Install frontend dependencies
+cd frontend
 npm install
 npm run build
+cd ..
 
 # Install backend dependencies
 cd backend
@@ -90,7 +92,7 @@ server {
 
     # Frontend
     location / {
-        root /var/www/contacthub/dist;
+        root /var/www/contacthub/frontend/dist;
         try_files $uri $uri/ /index.html;
     }
 
@@ -218,9 +220,9 @@ CMD ["npm", "start"]
 ```dockerfile
 FROM node:18-alpine as build
 WORKDIR /app
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
-COPY . .
+COPY frontend/ .
 RUN npm run build
 
 FROM nginx:alpine
@@ -382,10 +384,14 @@ jobs:
         node-version: '18'
     
     - name: Install dependencies
-      run: npm install
+      run: |
+        cd frontend
+        npm install
     
     - name: Build frontend
-      run: npm run build
+      run: |
+        cd frontend
+        npm run build
     
     - name: Deploy to server
       uses: easingthemes/ssh-deploy@main

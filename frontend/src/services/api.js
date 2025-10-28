@@ -45,6 +45,16 @@ export const activitiesAPI = {
   delete: (id) => api.delete(`/activities/${id}`),
 };
 
+// Panic Alerts API
+export const panicAlertsAPI = {
+  getAll: (params) => api.get('/panic-alerts', { params }),
+  getById: (id) => api.get(`/panic-alerts/${id}`),
+  create: (data) => api.post('/panic-alerts', data),
+  updateStatus: (id, status, acknowledgedBy) => api.patch(`/panic-alerts/${id}/status`, { status, acknowledgedBy }),
+  delete: (id) => api.delete(`/panic-alerts/${id}`),
+  getStats: () => api.get('/panic-alerts/stats/summary'),
+};
+
 // Health check
 export const healthCheck = () => api.get('/health');
 

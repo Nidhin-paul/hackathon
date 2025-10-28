@@ -8,7 +8,7 @@ start cmd /k "cd backend && npm run dev"
 timeout /t 3 /nobreak > nul
 echo.
 echo Starting Frontend Server...
-start cmd /k "npm run dev"
+start cmd /k "cd frontend && npm run dev"
 echo.
 echo ========================================
 echo Both servers are starting...

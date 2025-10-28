@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../context/AdminContext';
 import { 
   Shield, LogOut, Users, Phone, Activity, Trash2, Edit, 
   Plus, Search, AlertCircle, Download, RefreshCw, Eye, Menu, X,
-  LayoutDashboard, FileText, Settings, HelpCircle
+  LayoutDashboard, FileText, Settings, HelpCircle, Bell
 } from 'lucide-react';
-import { contactsAPI, logsAPI, activitiesAPI } from '../services/api';
+import { contactsAPI, logsAPI, activitiesAPI, panicAlertsAPI } from '../services/api';
 import AddContactModal from '../components/AddContactModal';
 import socketService from '../services/socket';
 import './AdminDashboard.css';
@@ -29,6 +29,38 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [panicAlerts, setPanicAlerts] = useState([]);
   const [userCategorySelections, setUserCategorySelections] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'contacts') {
+        const response = await contactsAPI.getAll();
+        setContacts(response.data);
+        calculateStats(response.data);
+      } else if (activeTab === 'logs') {
+        const response = await logsAPI.getAll();
+        setLogs(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  const calculateStats = useCallback((contactsData) => {
+    const categoryCounts = {};
+    contactsData.forEach(contact => {
+      categoryCounts[contact.category] = (categoryCounts[contact.category] || 0) + 1;
+    });
+
+    setStats({
+      totalContacts: contactsData.length,
+      totalLogs: logs.length,
+      categoryCounts,
+    });
+  }, [logs.length]);
 
   useEffect(() => {
     fetchData();
@@ -37,25 +69,80 @@ const AdminDashboard = () => {
     if (!socketService.socket) {
       socketService.connect();
     }
-  }, [activeTab]); // Re-fetch data when tab changes
+  }, [fetchData]); // Re-fetch data when fetchData changes
+
+  const fetchPanicAlerts = async () => {
+    try {
+      const response = await panicAlertsAPI.getAll({ status: 'active', limit: 50 });
+      const alerts = response.data.data || [];
+      
+      // Transform database alerts to match the expected format
+      const formattedAlerts = alerts.map(alert => ({
+        id: alert._id,
+        message: alert.message,
+        timestamp: alert.createdAt,
+        user: alert.user,
+        location: alert.location,
+      }));
+      
+      setPanicAlerts(formattedAlerts);
+      console.log('Loaded panic alerts from database:', formattedAlerts.length);
+    } catch (error) {
+      console.error('Error fetching panic alerts:', error);
+    }
+  };
 
   useEffect(() => {
+    // Connect to Socket.IO first
+    console.log('AdminDashboard: Setting up socket connection...');
+    if (!socketService.socket) {
+      socketService.connect();
+    }
+    
+    // Wait a moment for socket to connect
+    setTimeout(() => {
+      console.log('Socket status:', socketService.socket?.connected ? 'Connected' : 'Not connected');
+      console.log('Socket ID:', socketService.socket?.id);
+    }, 1000);
+    
     fetchUserActivities();
+    fetchPanicAlerts();
 
     // Listen for panic alerts
     const handlePanicAlert = (data) => {
-      console.log('Panic alert received:', data);
+      console.log('🚨 PANIC ALERT RECEIVED IN ADMIN DASHBOARD:', data);
       const alert = {
         id: Date.now(),
         message: data.message,
         timestamp: data.timestamp,
+        user: data.user || {
+          name: 'Unknown User',
+          email: 'No email',
+          id: 'unknown'
+        },
+        location: data.location || null,
       };
-      setPanicAlerts(prev => [alert, ...prev]);
+      console.log('Adding panic alert to state:', alert);
+      setPanicAlerts(prev => {
+        const updated = [alert, ...prev];
+        console.log('Updated panic alerts:', updated);
+        return updated;
+      });
+      
+      // Play alert sound
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77eeeTRAMUKfj8LZjHAY4ktfyzHksBSR3x/DdkEAKFF606+uoVRQKRp/g8r5sIQUrgs7y2Yk2CBlou+3nnk0QDFCn4/C2YxwGOJLX8sx5LAUkd8fw3ZBAC');
+        audio.play().catch(e => console.log('Audio play failed:', e));
+      } catch (e) {
+        console.log('Audio creation failed:', e);
+      }
       
       // Show browser notification if permitted
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('🚨 PANIC ALERT!', {
-          body: 'A user has pressed the panic button!',
+        const userName = data.user?.name || 'Unknown User';
+        const locationInfo = data.location?.address || 'Location unavailable';
+        new Notification('🚨 EMERGENCY MODE ACTIVATED!', {
+          body: `PANIC ALERT: ${userName} has pressed the panic button!\nLocation: ${locationInfo}\n⚠️ Immediate attention required!`,
           icon: '/favicon.ico',
           tag: 'panic-alert',
           requireInteraction: true,
@@ -103,24 +190,6 @@ const AdminDashboard = () => {
     };
   }, []); // Run only once on mount
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'contacts') {
-        const response = await contactsAPI.getAll();
-        setContacts(response.data);
-        calculateStats(response.data);
-      } else if (activeTab === 'logs') {
-        const response = await logsAPI.getAll();
-        setLogs(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchUserActivities = async () => {
     try {
       const response = await activitiesAPI.getAll({ limit: 50 });
@@ -144,19 +213,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const calculateStats = (contactsData) => {
-    const categoryCounts = {};
-    contactsData.forEach(contact => {
-      categoryCounts[contact.category] = (categoryCounts[contact.category] || 0) + 1;
-    });
-
-    setStats({
-      totalContacts: contactsData.length,
-      totalLogs: logs.length,
-      categoryCounts,
-    });
-  };
-
   const handleLogout = () => {
     logout();
     navigate('/admin/login');
@@ -168,7 +224,8 @@ const AdminDashboard = () => {
         await contactsAPI.delete(id);
         fetchData();
       } catch (error) {
-        alert('Failed to delete contact: ' + error.message);
+        const errorMessage = error.response?.data?.message || error.message;
+        alert('Failed to delete contact: ' + errorMessage);
       }
     }
   };
@@ -261,10 +318,10 @@ const AdminDashboard = () => {
         <header className="admin-header">
           <div className="admin-header-left">
             <button 
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
+              className="admin-mobile-menu-button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {sidebarOpen ? <X className="admin-menu-icon" /> : <Menu className="admin-menu-icon" />}
             </button>
             <h1 className="admin-page-title">
               {activeTab === 'contacts' ? 'Emergency Contacts List' : 
@@ -272,20 +329,93 @@ const AdminDashboard = () => {
             </h1>
           </div>
           <div className="admin-header-right">
-            {/* Panic Alert Badge */}
-            {panicAlerts.length > 0 && (
-              <div className="relative">
-                <button 
-                  className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all animate-pulse"
-                  title={`${panicAlerts.length} panic alert(s)`}
-                >
-                  <AlertCircle className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            {/* Notification Dropdown */}
+            <div className="admin-notification-dropdown-wrapper">
+              <button 
+                className={`admin-notification-bell ${panicAlerts.length > 0 ? 'has-alerts' : ''}`}
+                onClick={() => setShowNotifications(!showNotifications)}
+                title="Notifications"
+              >
+                <Bell className="admin-bell-icon" />
+                {panicAlerts.length > 0 && (
+                  <span className="admin-notification-count">
                     {panicAlerts.length}
                   </span>
-                </button>
-              </div>
-            )}
+                )}
+              </button>
+
+              {/* Notification Dropdown Menu */}
+              {showNotifications && (
+                <div className="admin-notification-dropdown">
+                  <div className="admin-notification-dropdown-header">
+                    <h3>Notifications</h3>
+                    {panicAlerts.length > 0 && (
+                      <button 
+                        onClick={() => setPanicAlerts([])}
+                        className="admin-clear-all-btn"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="admin-notification-list">
+                    {panicAlerts.length === 0 ? (
+                      <div className="admin-no-notifications">
+                        <Bell className="admin-no-notif-icon" />
+                        <p>No new notifications</p>
+                      </div>
+                    ) : (
+                      <>
+                        {panicAlerts.slice(0, 5).map((alert) => (
+                          <div key={alert.id} className="admin-notification-item">
+                            <div className="admin-notif-icon-wrapper emergency">
+                              <AlertCircle className="admin-notif-icon" />
+                            </div>
+                            <div className="admin-notif-content">
+                              <p className="admin-notif-title">🚨 EMERGENCY ALERT!</p>
+                              <p className="admin-notif-user">
+                                <strong>User:</strong> {alert.user?.name || 'Unknown User'}
+                              </p>
+                              {alert.user?.email && (
+                                <p className="admin-notif-email">
+                                  <strong>Email:</strong> {alert.user.email}
+                                </p>
+                              )}
+                              {alert.location?.address && (
+                                <p className="admin-notif-location">
+                                  <strong>📍 Location:</strong> {alert.location.address}
+                                </p>
+                              )}
+                              <p className="admin-notif-time">
+                                🕐 {new Date(alert.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPanicAlerts(prev => prev.filter(a => a.id !== alert.id));
+                              }}
+                              className="admin-notif-dismiss"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        {panicAlerts.length > 5 && (
+                          <div className="admin-notification-footer">
+                            <button className="admin-view-all-btn">
+                              + {panicAlerts.length - 5} more alerts
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="admin-user-info">
               <div className="admin-user-avatar">
                 {adminUser?.username?.charAt(0).toUpperCase() || 'A'}
@@ -297,6 +427,40 @@ const AdminDashboard = () => {
             </div>
           </div>
         </header>
+
+        {/* Notification Bar for Panic Alerts */}
+        {panicAlerts.length > 0 && (
+          <div className="admin-notification-bar">
+            <div className="admin-notification-content">
+              <div className="admin-notification-icon-wrapper">
+                <AlertCircle className="admin-notification-icon animate-pulse" />
+              </div>
+              <div className="admin-notification-text">
+                <strong>🚨 EMERGENCY ALERT!</strong>
+                <span className="admin-notification-message">
+                  {panicAlerts.length} panic button{panicAlerts.length > 1 ? 's' : ''} pressed! 
+                  Latest: {panicAlerts[0].user?.name || 'Unknown User'} - {panicAlerts[0].location?.address || 'Location unavailable'}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  // Scroll to panic alerts section
+                  document.querySelector('.admin-content-container')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="admin-notification-button"
+              >
+                View Details
+              </button>
+              <button
+                onClick={() => setPanicAlerts([])}
+                className="admin-notification-close"
+                title="Dismiss all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="admin-content-container">
@@ -312,13 +476,34 @@ const AdminDashboard = () => {
                     <div className="bg-red-600 text-white p-2 rounded-full animate-pulse">
                       <AlertCircle className="w-5 h-5" />
                     </div>
-                    <div>
-                      <h3 className="text-red-800 font-bold text-lg">🚨 {alert.message}</h3>
-                      <p className="text-red-600 text-sm mt-1">
-                        {new Date(alert.timestamp).toLocaleString()}
-                      </p>
-                      <p className="text-red-700 text-sm mt-2">
-                        A user has activated the emergency panic button. Immediate attention required!
+                    <div className="flex-1">
+                      <div className="bg-red-600 text-white px-3 py-2 rounded-md mb-2 inline-block font-bold text-sm emergency-mode-badge">
+                        🚨 EMERGENCY MODE ACTIVATED 🚨
+                      </div>
+                      <h3 className="text-red-800 font-bold text-lg">{alert.message}</h3>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-red-700 font-semibold">
+                          👤 User: {alert.user?.name || 'Unknown User'}
+                        </p>
+                        <p className="text-red-600 text-sm">
+                          📧 Email: {alert.user?.email || 'No email'}
+                        </p>
+                        {alert.location && (
+                          <p className="text-red-600 text-sm">
+                            📍 Location: {alert.location.address}
+                          </p>
+                        )}
+                        {alert.location && (
+                          <p className="text-red-600 text-sm">
+                            🗺️ Coordinates: {alert.location.latitude.toFixed(4)}, {alert.location.longitude.toFixed(4)}
+                          </p>
+                        )}
+                        <p className="text-red-600 text-sm">
+                          🕐 Time: {new Date(alert.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <p className="text-red-700 text-sm mt-3 font-semibold">
+                        ⚠️ Immediate attention required!
                       </p>
                     </div>
                   </div>
@@ -356,7 +541,7 @@ const AdminDashboard = () => {
                 }}
                 className="admin-add-button"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="admin-plus-icon" />
                 Add Emergency Contact
               </button>
             )}
@@ -374,11 +559,12 @@ const AdminDashboard = () => {
                 <table className="admin-table">
                   <thead>
                     <tr>
+                      <th></th>
                       <th>Name</th>
                       <th>Contact Type</th>
                       <th>Category Type</th>
                       <th>Contact Number</th>
-                      <th>Action</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -389,12 +575,22 @@ const AdminDashboard = () => {
                         <td className="admin-table-category">{contact.category}</td>
                         <td className="admin-table-phone">{contact.phone}</td>
                         <td>
-                          <button
-                            onClick={() => handleEditContact(contact)}
-                            className="admin-table-action-link"
-                          >
-                            Edit
-                          </button>
+                          <div className="admin-table-actions">
+                            <button
+                              onClick={() => handleEditContact(contact)}
+                              className="admin-table-action-link admin-action-edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteContact(contact._id)}
+                              className="admin-table-action-link admin-action-delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -414,19 +610,20 @@ const AdminDashboard = () => {
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Contact</th>
-                      <th>Phone</th>
-                      <th>Location</th>
-                      <th>Time</th>
+                      <th></th>
+                      <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontWeight: 600, fontSize: '0.8125rem' }}>Contact</th>
+                      <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontWeight: 600, fontSize: '0.8125rem' }}>Phone</th>
+                      <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontWeight: 600, fontSize: '0.8125rem' }}>Location</th>
+                      <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontWeight: 600, fontSize: '0.8125rem' }}>Time</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredLogs.map((log) => (
                       <tr key={log._id}>
-                        <td className="admin-table-name">{log.contactName}</td>
-                        <td className="admin-table-phone">{log.contactPhone}</td>
-                        <td className="admin-table-category">{log.userLocation?.address || 'N/A'}</td>
-                        <td className="admin-table-type">{new Date(log.createdAt).toLocaleString()}</td>
+                        <td style={{ textAlign: 'left', padding: '1rem 1.5rem', verticalAlign: 'middle', fontWeight: 500 }}>{log.contactName}</td>
+                        <td style={{ textAlign: 'left', padding: '1rem 1.5rem', verticalAlign: 'middle', fontFamily: 'Courier New, monospace' }}>{log.contactPhone}</td>
+                        <td style={{ textAlign: 'left', padding: '1rem 1.5rem', verticalAlign: 'middle' }}>{log.userLocation?.address || 'N/A'}</td>
+                        <td style={{ textAlign: 'left', padding: '1rem 1.5rem', verticalAlign: 'middle', fontSize: '0.8125rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -445,6 +642,7 @@ const AdminDashboard = () => {
                 <table className="admin-table">
                   <thead>
                     <tr>
+                      <th></th>
                       <th>User Name</th>
                       <th>Email</th>
                       <th>Category Selected</th>
@@ -456,8 +654,8 @@ const AdminDashboard = () => {
                     {userCategorySelections.map((selection) => (
                       <tr key={selection.id}>
                         <td className="admin-table-name">{selection.userName}</td>
-                        <td className="admin-table-phone">{selection.userEmail}</td>
-                        <td>
+                        <td className="admin-table-email">{selection.userEmail}</td>
+                        <td className="admin-table-category-badge">
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                             selection.category === 'police' ? 'bg-blue-100 text-blue-800' :
                             selection.category === 'fire' ? 'bg-red-100 text-red-800' :
@@ -469,10 +667,10 @@ const AdminDashboard = () => {
                             {selection.category.toUpperCase()}
                           </span>
                         </td>
-                        <td className="admin-table-category">
+                        <td className="admin-table-location">
                           {selection.location?.address || 'Location unavailable'}
                         </td>
-                        <td className="admin-table-type">
+                        <td className="admin-table-time">
                           {new Date(selection.timestamp).toLocaleString()}
                         </td>
                       </tr>

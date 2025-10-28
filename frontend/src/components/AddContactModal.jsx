@@ -9,6 +9,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, editContact }) => {
     phone: '',
     category: 'other',
     description: '',
+    isPredefined: false,
     location: {
       latitude: null,
       longitude: null,
@@ -26,6 +27,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, editContact }) => {
         phone: '',
         category: 'other',
         description: '',
+        isPredefined: false,
         location: {
           latitude: null,
           longitude: null,
@@ -149,6 +151,24 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, editContact }) => {
               className="modal-textarea"
               placeholder="Enter description"
             />
+          </div>
+
+          <div className="modal-form-group">
+            <label className="modal-checkbox-label">
+              <input
+                type="checkbox"
+                name="isPredefined"
+                checked={formData.isPredefined}
+                onChange={(e) => setFormData(prev => ({ ...prev, isPredefined: e.target.checked }))}
+                className="modal-checkbox"
+              />
+              <span className="modal-checkbox-text">
+                Mark as Official Contact
+              </span>
+            </label>
+            <p className="modal-help-text">
+              Official contacts will display an "Official" badge
+            </p>
           </div>
 
           <div className="modal-form-group">

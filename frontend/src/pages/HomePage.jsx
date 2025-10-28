@@ -8,9 +8,13 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     fetchLocation();
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
   }, []);
 
   const fetchLocation = async () => {
@@ -43,6 +47,15 @@ const HomePage = () => {
     }
   };
 
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    // Optionally navigate to home or show a message
+    window.location.reload();
+  };
+
   return (
     <div className="home-container animate-fade-in">
       {/* Header */}
@@ -50,18 +63,29 @@ const HomePage = () => {
         <div className="home-header-content">
           <h1 className="home-header-title">Emergency Contact Hub</h1>
           <div className="home-header-buttons">
-            <button
-              onClick={() => navigate('/login')}
-              className="home-header-button hover:scale-105 transition-transform duration-200"
-            >
-              Login
-            </button>
-            <button
-              onClick={() => navigate('/register')}
-              className="home-header-button hover:scale-105 transition-transform duration-200"
-            >
-              Register
-            </button>
+            {isLoggedIn ? (
+              <button
+                onClick={handleLogout}
+                className="home-header-button hover:scale-105 transition-transform duration-200"
+              >
+                Logout
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="home-header-button hover:scale-105 transition-transform duration-200"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="home-header-button hover:scale-105 transition-transform duration-200"
+                >
+                  Register
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -149,17 +173,6 @@ const HomePage = () => {
             className="quick-access-link hover:scale-105 transition-transform duration-200"
           >
             Go to Full Dashboard →
-          </button>
-        </div>
-
-        {/* Admin Access */}
-        <div className="admin-access-wrapper">
-          <button
-            onClick={() => navigate('/admin/login')}
-            className="admin-access-button"
-          >
-            <span className="admin-access-icon">🔒</span>
-            <span>Admin Access</span>
           </button>
         </div>
       </main>

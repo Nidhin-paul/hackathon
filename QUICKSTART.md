@@ -12,9 +12,18 @@ Get the Emergency Contact Hub up and running in minutes!
 
 ### 1️⃣ Install Dependencies
 
+**Option 1: Install all at once**
+```bash
+npm run install:all
+```
+
+**Option 2: Install separately**
+
 **Frontend:**
 ```bash
+cd frontend
 npm install
+cd ..
 ```
 
 **Backend:**
@@ -57,7 +66,13 @@ Predefined emergency contacts seeded successfully
 
 Open a **new** terminal:
 ```bash
+cd frontend
 npm run dev
+```
+
+**OR use the root script:**
+```bash
+npm run dev:frontend
 ```
 
 ✅ You should see:
@@ -93,9 +108,9 @@ The app should now display:
 - Verify `.env` file exists in `backend/` folder
 
 ### Frontend won't start?
-- Make sure you ran `npm install` in the root directory
+- Make sure you ran `npm install` in the `frontend/` directory
 - Check if port 5173 is available
-- Verify `.env` file exists in root folder
+- Verify `.env` file exists in `frontend/` folder
 
 ### Can't connect to API?
 - Ensure backend is running on port 5000

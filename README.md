@@ -43,13 +43,21 @@ git clone <repository-url>
 cd contacthub
 ```
 
-### 2. Install Frontend Dependencies
+### 2. Install Dependencies
+
+**Option 1: Install all at once (requires root package.json)**
 ```bash
-npm install
+npm run install:all
 ```
 
-### 3. Install Backend Dependencies
+**Option 2: Install separately**
 ```bash
+# Frontend
+cd frontend
+npm install
+cd ..
+
+# Backend
 cd backend
 npm install
 cd ..
@@ -57,7 +65,7 @@ cd ..
 
 ### 4. Configure Environment Variables
 
-**Frontend (.env)**
+**Frontend (frontend/.env)**
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
@@ -89,42 +97,64 @@ The backend will run on `http://localhost:5000`
 ### 7. Start the Frontend Development Server
 Open a new terminal:
 ```bash
+cd frontend
 npm run dev
 ```
 The frontend will run on `http://localhost:5173`
+
+### Alternative: Start Both Servers Together
+
+**Option 1: Using root package.json**
+```bash
+npm run dev
+```
+
+**Option 2: Using batch script (Windows)**
+```bash
+start-dev.bat
+```
 
 ## 📁 Project Structure
 
 ```
 contacthub/
-├── backend/
+├── 🔧 backend/                  # Backend directory
 │   ├── config/
-│   │   └── database.js          # MongoDB connection & seeding
+│   │   └── db.js                # MongoDB connection
 │   ├── models/
-│   │   ├── EmergencyContact.js  # Contact schema
-│   │   └── EmergencyLog.js      # Log schema
+│   │   ├── User.js              # User schema
+│   │   ├── Contact.js           # Contact schema
+│   │   ├── PanicAlert.js        # Panic alert schema
+│   │   └── Admin.js             # Admin schema
 │   ├── routes/
-│   │   ├── contactRoutes.js     # Contact API routes
-│   │   └── logRoutes.js         # Log API routes
+│   │   ├── auth.js              # Authentication routes
+│   │   ├── contacts.js          # Contact API routes
+│   │   ├── panic.js             # Panic alert routes
+│   │   └── admin.js             # Admin routes
 │   ├── .env                     # Backend environment variables
 │   ├── package.json             # Backend dependencies
 │   └── server.js                # Express server entry point
-├── src/
-│   ├── components/
-│   │   ├── AddContactModal.jsx  # Add/Edit contact modal
-│   │   ├── EmergencyCard.jsx    # Contact card component
-│   │   └── LocationTracker.jsx  # Location display component
-│   ├── services/
-│   │   └── api.js               # API service layer
-│   ├── utils/
-│   │   └── geolocation.js       # Location utilities
-│   ├── App.jsx                  # Main application component
-│   ├── index.css                # Global styles with Tailwind
-│   └── main.jsx                 # React entry point
-├── .env                         # Frontend environment variables
-├── package.json                 # Frontend dependencies
-├── tailwind.config.js           # Tailwind configuration
-├── vite.config.js               # Vite configuration
+│
+├── 🎨 frontend/                 # Frontend directory
+│   ├── src/
+│   │   ├── components/          # Reusable UI components
+│   │   ├── pages/               # Page components
+│   │   ├── services/            # API service layer
+│   │   ├── context/             # React Context providers
+│   │   ├── utils/               # Utility functions
+│   │   ├── App.jsx              # Main application component
+│   │   ├── App.css              # App styles
+│   │   ├── index.css            # Global styles with Tailwind
+│   │   └── main.jsx             # React entry point
+│   ├── public/                  # Static assets
+│   ├── index.html               # HTML entry point
+│   ├── vite.config.js           # Vite configuration
+│   ├── tailwind.config.js       # Tailwind configuration
+│   ├── .env                     # Frontend environment variables
+│   └── package.json             # Frontend dependencies
+│
+├── package.json                 # Root package.json (monorepo scripts)
+├── start-dev.bat                # Windows batch script to start both servers
 └── README.md                    # Project documentation
 ```
 

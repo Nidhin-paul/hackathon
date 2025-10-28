@@ -10,9 +10,11 @@ class SocketService {
 
   connect() {
     if (this.socket?.connected) {
+      console.log('Socket already connected:', this.socket.id);
       return this.socket;
     }
 
+    console.log('Connecting to socket server:', SOCKET_URL);
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -21,15 +23,15 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Socket connected:', this.socket.id);
+      console.log('✅ Socket connected successfully:', this.socket.id);
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+      console.log('❌ Socket disconnected');
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+      console.error('❌ Socket connection error:', error);
     });
 
     return this.socket;
@@ -104,14 +106,27 @@ class SocketService {
 
   // Panic alert methods
   emitPanicAlert(data) {
+    console.log('📤 Emitting panic:alert event with data:', data);
+    if (!this.socket) {
+      console.error('❌ Socket not connected! Connecting now...');
+      this.connect();
+    }
     this.emit('panic:alert', data);
+    console.log('✅ Panic alert emitted');
   }
 
   onPanicAlert(callback) {
+    console.log('👂 Registering panic:alert listener');
+    if (!this.socket) {
+      console.log('Socket not connected, connecting now...');
+      this.connect();
+    }
     this.on('panic:alert', callback);
+    console.log('✅ Panic alert listener registered');
   }
 
   offPanicAlert(callback) {
+    console.log('🔇 Removing panic:alert listener');
     this.off('panic:alert', callback);
   }
 

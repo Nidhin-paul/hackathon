@@ -37,8 +37,8 @@ const LoginPage = () => {
         localStorage.setItem('token', response.data.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.data.user));
         
-        // Navigate to dashboard
-        navigate('/dashboard');
+        // Navigate to home page
+        navigate('/');
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -137,6 +137,17 @@ const LoginPage = () => {
         <div className="back-home">
           <button onClick={() => navigate('/')} className="back-home-link">
             ← Back to Home
+          </button>
+        </div>
+
+        {/* Admin Access */}
+        <div className="admin-access-wrapper">
+          <button
+            onClick={() => navigate('/admin/login')}
+            className="admin-access-button"
+          >
+            <span className="admin-access-icon">🔒</span>
+            <span>Admin Access</span>
           </button>
         </div>
       </div>

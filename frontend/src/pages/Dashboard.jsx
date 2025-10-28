@@ -54,11 +54,53 @@ function Dashboard() {
       // Show all emergency contacts in panic mode
       setSelectedCategory('all');
       
-      // Emit panic alert to admin
-      socketService.emitPanicAlert({
-        message: 'PANIC BUTTON PRESSED!',
-        timestamp: new Date().toISOString(),
-      });
+      // Get user info and location for panic alert
+      const sendPanicAlert = async () => {
+        // Get user info from localStorage
+        const userStr = localStorage.getItem('user');
+        let user = null;
+        if (userStr) {
+          try {
+            user = JSON.parse(userStr);
+          } catch (err) {
+            console.error('Error parsing user data:', err);
+          }
+        }
+        
+        // Get current location
+        let location = null;
+        let address = 'Location unavailable';
+        try {
+          location = await getCurrentLocation();
+          address = await getAddressFromCoordinates(location.latitude, location.longitude);
+        } catch (err) {
+          console.error('Error getting location:', err);
+        }
+        
+        // Emit panic alert to admin with user info
+        const panicData = {
+          message: 'PANIC BUTTON PRESSED!',
+          timestamp: new Date().toISOString(),
+          user: user ? {
+            name: user.name || 'Unknown User',
+            email: user.email || 'No email',
+            id: user._id || user.id || 'unknown'
+          } : {
+            name: 'Guest User',
+            email: 'Not logged in',
+            id: 'guest'
+          },
+          location: location ? {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            address: address
+          } : null
+        };
+        console.log('🚨 EMITTING PANIC ALERT:', panicData);
+        socketService.emitPanicAlert(panicData);
+      };
+      
+      sendPanicAlert();
       
       addNotification('🚨 Emergency mode activated! All contacts displayed.', 'error');
     }

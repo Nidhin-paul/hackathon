@@ -1,38 +1,30 @@
 {
-  "name": "contacthub",
+  "name": "contacthub-monorepo",
+  "version": "1.0.0",
+  "description": "Emergency Contact Hub - Full Stack Application",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "backend": "cd backend && npm run dev",
-    "start:all": "concurrently \"npm run backend\" \"npm run dev\""
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:frontend": "cd frontend && npm run build",
+    "start:frontend": "cd frontend && npm run preview",
+    "start:backend": "cd backend && npm start",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
-  "dependencies": {
-    "@tailwindcss/vite": "^4.1.15",
-    "axios": "^1.12.2",
-    "lucide-react": "^0.546.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "react-router-dom": "^7.9.4",
-    "socket.io-client": "^4.8.1"
-  },
+  "keywords": [
+    "emergency",
+    "contacts",
+    "react",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
-    "@tailwindcss/postcss": "^4.1.15",
-    "@types/react": "^19.1.16",
-    "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.0.4",
-    "autoprefixer": "^10.4.21",
-    "eslint": "^9.36.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.22",
-    "globals": "^16.4.0",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.15",
-    "vite": "^7.1.7"
+    "concurrently": "^8.2.2"
   }
 }
