@@ -185,4 +185,89 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// Forgot password - send reset instructions
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validation
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your email address',
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    // For security, always return success even if user doesn't exist
+    // This prevents email enumeration attacks
+    if (!user) {
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email, password reset instructions have been sent.',
+      });
+    }
+
+    // In a production app, you would:
+    // 1. Generate a password reset token
+    // 2. Store it in the database with an expiration time
+    // 3. Send an email with a reset link containing the token
+    // For now, we'll just return a success message
+    
+    // TODO: Implement actual email sending with reset token
+    console.log(`Password reset requested for: ${email}`);
+    
+    res.json({
+      success: true,
+      message: 'If an account exists with this email, password reset instructions have been sent.',
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing password reset request',
+      error: error.message,
+    });
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Validation
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide token and new password',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    // TODO: Implement token verification and password reset
+    // For now, return a placeholder response
+    
+    res.json({
+      success: true,
+      message: 'Password reset functionality will be implemented with email service',
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error resetting password',
+      error: error.message,
+    });
+  }
+});
+
 export default router;

@@ -121,10 +121,10 @@ const LoginPage = () => {
 
         <div className="login-footer">
           <p className="forgot-password">
-            Forgot{' '}
-            <a href="#" className="forgot-link">
-              Username / Password?
-            </a>
+            Forgot your password?{' '}
+            <button onClick={() => navigate('/forgot-password')} className="forgot-link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+              Reset it here
+            </button>
           </p>
           <p className="signup-text">
             Don't have an account?{' '}

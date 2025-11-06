@@ -35,6 +35,8 @@ export const authAPI = {
     headers: { Authorization: `Bearer ${token}` }
   }),
   getAllUsers: () => api.get('/auth/users'),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
 };
 
 // User Activity API
